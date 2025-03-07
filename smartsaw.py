@@ -17,12 +17,13 @@ class SmartSaw:
                 return lengte  # Gebruik voorraadstaaf
 
         return self.standaard_lengte  # Bestel een nieuwe staaf
-
+    
+    """
     def optimaliseer_zaagplan(self, te_zagen):
-        """
-        Stap 1: Eerst het zaagplan uitvoeren zonder voorraadregel te checken.
-        Stap 2: Na afloop evalueren of de voorraad gebruikt mocht worden en zo nodig corrigeren.
-        """
+        
+        # Stap 1: Eerst het zaagplan uitvoeren zonder voorraadregel te checken.
+        # Stap 2: Na afloop evalueren of de voorraad gebruikt mocht worden en zo nodig corrigeren.
+        
         staven_gebruikt = []
         opdrachten = []
         voorraad_vooraf = self.voorraad.copy()  # Bewaar initiële voorraad
@@ -58,6 +59,60 @@ class SmartSaw:
                 opdrachten.append({"project": project, "lengte": lengte, "staaf": nieuwe_staaf})
 
         return staven_gebruikt, opdrachten
+    """
+
+    def optimaliseer_zaagplan(self, te_zagen):
+        # Optimalisatie van het zaagplan:
+        # Voorkomt negatieve restwaarden door lengtecontrole.
+        # Zorgt ervoor dat alle zaagregels correct worden meegenomen.
+        # Geeft prioriteit aan bestaande voorraadstaven, mits ze lang genoeg zijn.
+        staven_gebruikt = []
+        opdrachten = []
+        voorraad_vooraf = self.voorraad.copy()  # Bewaar initiële voorraad
+
+        # Sorteer stukken van groot naar klein
+        alle_stukken = [(p, l) for p, stukken in te_zagen.items() for l, a in stukken.items() for _ in range(a)]
+        alle_stukken.sort(key=lambda x: x[1], reverse=True)
+
+        for project, lengte in alle_stukken:
+            beste_staaf = None
+            minste_rest = float("inf")
+
+            # ✅ Controle: zoek een bestaande staaf die lang genoeg is
+            for staaf in staven_gebruikt:
+                rest_na_plaatsen = staaf["rest"] - (lengte + self.zaagbreedte)
+
+                # Staaf mag alleen gekozen worden als de restlengte niet negatief wordt
+                if 0 <= rest_na_plaatsen < minste_rest:
+                    beste_staaf = staaf
+                    minste_rest = rest_na_plaatsen
+
+            if beste_staaf:
+                # ✅ Voeg stuk toe aan de beste staaf en update restlengte
+                beste_staaf["stukken"].append({"project": project, "lengte": lengte})
+                beste_staaf["rest"] = minste_rest
+                beste_staaf["zaagsnedes"] += 1
+                opdrachten.append({"project": project, "lengte": lengte, "staaf": beste_staaf["lengte"]})
+            else:
+                # ✅ Neem een nieuwe staaf, maar zorg dat deze groot genoeg is
+                nieuwe_staaf = self._neem_staaf()
+
+                if nieuwe_staaf < lengte + self.zaagbreedte:
+                    print(f"⚠️ ERROR: Geen geschikte staaf voor lengte {lengte}. Dit stuk wordt overgeslagen!")
+                    continue  # Dit voorkomt dat zaagregels verloren gaan!
+
+                # ✅ Voeg de nieuwe staaf toe en verwerk de zaagopdracht correct
+                staven_gebruikt.append({
+                    "lengte": nieuwe_staaf,
+                    "stukken": [{"project": project, "lengte": lengte}],
+                    "rest": nieuwe_staaf - lengte - self.zaagbreedte,
+                    "type": "voorraad" if nieuwe_staaf in voorraad_vooraf else "bestelstandaard",
+                    "zaagsnedes": 1
+                })
+                opdrachten.append({"project": project, "lengte": lengte, "staaf": nieuwe_staaf})
+
+        return staven_gebruikt, opdrachten
+
 
     def print_resultaat(self, zaagplan, opdrachten):
         print("\n--- Geoptimaliseerd Zaagplan ---")

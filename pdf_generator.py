@@ -15,11 +15,23 @@ def genereer_pdf(zaagplan, totalelengte, totalerest, efficientie, bestandspad="z
     # Samenvatting
     c.setFont("Helvetica", 12)
     c.drawString(50, y_offset, f"Totaal ruw materiaal: {totalelengte} mm")
+    c.drawString(300, y_offset, f"Breedte Zaagsnede: 5mm")
     y_offset -= 20
     c.drawString(50, y_offset, f"Totaal restmateriaal: {totalerest} mm")
+    c.drawString(300, y_offset, f"Standaard Lengte: 12000mm")
+    y_offset -= 20
+    c.drawString(50, y_offset, f"Lengtes Gebruikt:")
+    y_offset -= 20
+    c.drawString(70, y_offset, f"# Voorraad lengte(s):")
+    y_offset -= 20
+    c.drawString(70, y_offset, f"# Standaard lengte(s):")
     y_offset -= 20
     c.drawString(50, y_offset, f"Efficiëntie: {efficientie:.2f}%")
     y_offset -= 40
+
+    
+    
+    y_offset -= 20
 
     # Zaagplan details
     for i, staaf in enumerate(zaagplan):
